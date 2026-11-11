@@ -15,3 +15,5 @@ out/
 work/
 .venv/
 __pycache__/
+!docs/screenshots/*.png
+CLAUDE.md

@@ -6,13 +6,25 @@ holds a script that builds a set of [DuckStation](https://www.duckstation.org/) 
 replacements from that art, so the PlayStation game shows the PC portraits (64x80 instead of
 48x64), battle map units (2x), battle maps (6x), and hall and town pictures (2x).
 
-> **This repository contains no game data.** No pictures, palettes or other content from either
-> release are included here or in any download. The script reads **your own PC disc and your own
-> PlayStation disc** and writes the PNG files on your machine. You need both discs.
+> **This repository contains no game data.** Apart from the screenshots on this page, no
+> pictures, palettes or other content from either release are included here or in any download.
+> The script reads **your own PC disc and your own PlayStation disc** and writes the PNG files
+> on your machine. You need both discs.
 
 It is a companion to the
 [English translation patch](https://github.com/damon-daemon/sangokushi-koumeiden-english) but
 does not contain it.
+
+## Screenshots
+
+DuckStation at 4x internal resolution, English patch v0.9.4. Left: the PlayStation art. Right:
+with the pack.
+
+| Before | After |
+|---|---|
+| ![Talk scene, PlayStation art](docs/screenshots/talk_before.png) | ![Talk scene with the pack](docs/screenshots/talk_after.png) |
+| ![Battle map, PlayStation art](docs/screenshots/battle_before.png) | ![Battle map with the pack](docs/screenshots/battle_after.png) |
+| ![Hall, PlayStation art](docs/screenshots/hall_before.png) | ![Hall with the pack](docs/screenshots/hall_after.png) |
 
 ## What you need
 
