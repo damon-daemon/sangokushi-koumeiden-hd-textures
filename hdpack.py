@@ -110,7 +110,8 @@ def main():
             shutil.rmtree(work, ignore_errors=True)
     print('\n%d replacement textures in %s' % (total, out))
     if os.path.basename(out) != 'replacements':
-        print('Copy them to <DuckStation folder>/textures/%s/replacements/' % GAME_ID)
+        print('Copy them to textures/%s/replacements/ in DuckStation\'s data folder'
+              ' (DuckStation menu: Tools > Open Data Directory...)' % GAME_ID)
     print('DuckStation: hardware renderer, texture cache and texture replacements on (see README.md).')
 
 

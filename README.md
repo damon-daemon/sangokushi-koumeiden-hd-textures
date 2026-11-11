@@ -28,32 +28,111 @@ with the pack.
 
 ## What you need
 
-- An image of the Windows 95 disc (raw `.img`/`.bin` or `.iso`), or a folder with its files
-- Track 1 of the PlayStation disc (serial `SLPS-00688`), Japanese original or English-patched
-- Python 3.10+
-- DuckStation with a hardware renderer
+- **The Windows 95 disc of the game**: the disc itself in your CD/DVD drive, a disc image of it
+  (`.iso`, `.img` or `.bin`), or a folder with a copy of its files. Any of the three works.
+- **The PlayStation disc as a disc image** (serial `SLPS-00688`): the "Track 1" `.bin` file you
+  already use to play. The Japanese original and the English-patched one both work.
+- **[DuckStation](https://www.duckstation.org/)**, the PlayStation emulator. The pack does not
+  work in other emulators or on a real console.
+- **[Python](https://www.python.org/downloads/)** 3.10 or newer, a free program that runs the
+  script. You do not need to know Python.
 
-To see every battle map in full, play the **English patch v0.9.4 or later**. On the unpatched
-Japanese disc and on older patch versions the right part of some battle maps stays at the
-original resolution, because of how the game draws the map; v0.9.4 changes that drawing.
-Everything else works on any version.
+Use the **[English patch](https://github.com/damon-daemon/sangokushi-koumeiden-english) v0.9.4
+or later** to see every battle map in full. On the Japanese disc and on older patch versions the
+right part of some battle maps stays at the original resolution. Everything else works on any
+version.
 
-## Building the pack
+## Step by step (Windows)
+
+1. **Install Python.** Download it from [python.org](https://www.python.org/downloads/) and run
+   the installer. On its first screen tick **"Add python.exe to PATH"**, then click Install.
+2. **Download this repository.** On this page click the green **Code** button, then
+   **Download ZIP**. Unzip it somewhere easy to find, for example your Desktop.
+3. **Open a command window in that folder.** Open the unzipped folder in File Explorer (the one
+   that has `hdpack.py` in it), click the address bar at the top, type `cmd` and press Enter.
+   A black window opens.
+4. **Install what the script needs.** Type this into the black window and press Enter (only
+   needed the first time):
+
+   ```
+   py -m pip install -r requirements.txt
+   ```
+
+5. **Build the textures.** Type `py hdpack.py`, a space, the PC disc, a space, then the
+   PlayStation Track 1 file, and press Enter. You do not have to type the file names: drag a
+   file from File Explorer onto the black window and its full name is filled in for you.
+
+   With the PC disc in drive `D:`:
+
+   ```
+   py hdpack.py D:\ "C:\Games\Sangokushi Koumeiden (Japan) (Track 1).bin"
+   ```
+
+   With a disc image of the PC disc:
+
+   ```
+   py hdpack.py "C:\Games\koumeiden_pc.iso" "C:\Games\Sangokushi Koumeiden (Japan) (Track 1).bin"
+   ```
+
+   Names with spaces need the quotation marks. After about a minute it prints
+   `564 replacement textures in ...` and the pictures are in a new folder named `out`.
+6. **Copy the textures into DuckStation.** In DuckStation open the menu **Tools > Open Data
+   Directory...**. In the folder that opens, go into `textures` (create it if it is not there),
+   create a folder named `SLPM-86205`, and inside that a folder named `replacements`. Copy all
+   564 files from `out` into `replacements`.
+
+   The folder name must be exactly `SLPM-86205`: that is how DuckStation lists this disc, even
+   though the disc's own serial is different.
+7. **Turn the textures on in DuckStation.** Open **Settings > Graphics**:
+   - On the **Rendering** tab, **Renderer** must be anything except *Software* (*Automatic* is
+     fine). Set **Internal Resolution** to 4x or higher, otherwise there is little to see.
+   - On the **Texture Replacement** tab, tick **Enable Texture Cache** and
+     **Enable Texture Replacements**.
+8. **Start the game.**
+
+## Linux and macOS
+
+The same steps in a terminal opened in the repository folder:
 
 ```
-python -m venv .venv
+python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-.venv/bin/python hdpack.py "/path/to/pc_disc.img" "/path/to/Sangokushi Koumeiden (Japan) (Track 1).bin" -o "<DuckStation folder>/textures/SLPM-86205/replacements"
+.venv/bin/python hdpack.py "/path/to/pc_disc.iso" "/path/to/Sangokushi Koumeiden (Japan) (Track 1).bin"
 ```
 
-This writes 564 PNG files and takes about a minute. Without `-o` they go to `out/`; copy them
-to the `replacements` folder yourself. DuckStation lists this disc as `SLPM-86205`.
+Then copy the files from `out/` to `textures/SLPM-86205/replacements/` in DuckStation's data
+folder (**Tools > Open Data Directory...**), and change the settings as in step 7 above. With
+`-o FOLDER` the script writes straight into a folder of your choice.
 
-In DuckStation's graphics settings choose a hardware renderer and turn on the texture cache and
-texture replacements.
+## Did it work?
 
-Options: `--pc-colours` (hall pictures keep the PC palette instead of the PlayStation
-picture's colours), `--keep-work` (keep the files taken from the discs in `work/`).
+Play until a conversation shows a portrait in the text box: it should look
+clearly sharper, as in the screenshots above. In a battle, the map and the units are sharper too.
+
+If nothing looks different:
+
+- The renderer is set to *Software*, or one of the two boxes in step 7 is not ticked.
+- The files are not in `textures/SLPM-86205/replacements` (check the spelling, and that the PNG
+  files are directly in `replacements`, not in another folder inside it).
+
+If the black window says `'py' is not recognized`, Python is not installed, or the
+"Add python.exe to PATH" box was not ticked: run the Python installer again.
+
+If the script stops with a message such as `PC disc: ... files missing`, it names what it could
+not find. Check that the first name is the PC disc and the second is the PlayStation Track 1
+file.
+
+DuckStation calls its texture cache experimental. If you see wrong pictures, untick the two
+boxes again; the pack changes nothing in the game or your saves.
+
+## Options
+
+Add these at the end of the `hdpack.py` line if you want them:
+
+- `-o FOLDER`: write the textures to this folder instead of `out`
+- `--pc-colours`: hall pictures keep the PC version's colours instead of the PlayStation
+  picture's colours
+- `--keep-work`: keep the files read from the two discs in a folder named `work`
 
 ## What is replaced and what is not
 
@@ -92,7 +171,8 @@ PlayStation resolution:
 | `gen/hdfaces.py`, `hdunits.py`, `hdmaps.py`, `hdbacks.py` | Portraits, battle map units, battle maps, halls and town overviews |
 | `gen/ls11.py`, `timdump.py`, `disc.py` | PC archive format, PlayStation TIM pictures, disc image reader |
 
-Tested with DuckStation (OpenGL renderer) on Linux.
+Tested with DuckStation (OpenGL renderer) on Linux. The Windows steps have not been tried on a
+Windows machine yet; please report anything that does not match.
 
 ## Credits
 
