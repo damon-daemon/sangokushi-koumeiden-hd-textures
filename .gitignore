@@ -1,0 +1,17 @@
+# Never commit Koei's data: disc images, files taken from them, generated textures
+*.iso
+*.bin
+*.BIN
+*.cue
+*.ccd
+*.sub
+*.img
+*.chd
+*.E2
+*.e2
+*.png
+*.sav
+out/
+work/
+.venv/
+__pycache__/
