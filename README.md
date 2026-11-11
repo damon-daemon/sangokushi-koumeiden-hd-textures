@@ -146,9 +146,10 @@ PlayStation resolution:
   frame also stay PlayStation pixels (103 portraits).
 - **Battle map units**: the effects (ships, fire ship, fire, confusion cloud, splash, arrows,
   starburst, boulder, slash) were redrawn for the PlayStation and look different on the PC. The
-  Chief Strategist unit is a PlayStation-only sprite. Zhang Fei and Zhao Yun have
+  Chief Strategist unit is a PlayStation-only sprite. Guan Yu and Zhang Fei have
   their own sprites on the PlayStation only; with the pack they show the PC's Light Cavalry sprite
-  (their unit class).
+  (their unit class). Zhang Fei's has its two colours exchanged, so he stays green as on the
+  PlayStation instead of looking like the other cavalry.
 - **Battle maps**: two maps (43 and 44) are not on the PC disc.
 - **Halls**: the PC picture covers the middle 200 of the PlayStation's 240 rows; the top and
   bottom 20 rows stay at PlayStation resolution, and the PC part is shown in the PlayStation

@@ -18,7 +18,7 @@ Facts: the first 637 cells are 49 unit types x 13 cells = 6 walk frames (PC CHR_
 window per frame -> found here by matching), 1 hit frame (CHR_ATT entry 79 + type, 48x48). The PS1 sheets
 hold the red side only (PC even types up to 62; odd = blue); the last 19 cells (boats, fire, effects)
 have no source here and stay PS1 pixels (2x nearest), as does block 39 (not identified). Block 31 (Nanman
-Cavalry) = PC type 62; blocks 47/48 (PS1-only officer sprites) show the PC sprite of their class, see ALIAS.
+Cavalry) = PC type 62; blocks 47/48 (PS1-only officer sprites) show the PC sprite of their class, see ALIAS / SWAP_RAMPS.
 """
 import json, os, struct, sys
 import numpy as np
@@ -33,10 +33,15 @@ CELL, PER, NTYPES = 24, 13, 49
 # PS1 block -> PC unit type (PS1 follows the PC class order; None = PS1-only variant, kept as is)
 BLOCK_TYPE = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 38, 40, 42, 42, 44, 46, 48, 50,
               52, 54, 56, 58, 60, 62, 64, 65, 66, 67, 68, 69, 70, None, 72, 73, 74, 75, 76, 77, 78, None, None]
-# PS1-only officer sprites (program switch at 0x8004e96c: officer 2 Zhang Fei -> block 47, officer 3 Zhao Yun -> 48).
+# PS1-only officer sprites (program switch at 0x8004e96c: officer 2 Guan Yu -> block 47, officer 3 Zhang Fei -> 48).
 # The PC disc has no art for them (its 7 officer types 72-78 = blocks 40-46), so they get what the PC has for
 # their class: Light Cavalry = block 6 (PC type 12), cell for cell.
 ALIAS = {47: 6, 48: 6}
+# Each side palette has two colour ramps (CLUT entries 4-6 and 7-9 = PC palette 53-60 and 80-87; the blue palette:
+# blue and green). The Light Cavalry sprite is mostly the first ramp, Zhang Fei's PS1 sprite almost only the second
+# (green where the game draws him with the blue palette). His block gets the PC sprite with the two ramps exchanged,
+# so he keeps his PS1 colour instead of looking like every other cavalry unit.
+SWAP_RAMPS = {48}
 ATT9 = (0, 2, 3, 5, 6, 8)
 SIDES = ('blue', 'purple', 'red', 'white')            # order of the EXE table
 
@@ -157,10 +162,12 @@ def main(argv=None):
         c4 = np.array([timdump.c15(v) for v in clut], np.uint8)
         big = np.repeat(np.repeat(c4[idx], 2, axis=1), 2, axis=2)            # PS1 pixels 2x, this side's colours
         p = pal if side == 'red' else recolour(pal, red, clut)
+        psw = p.copy()
+        psw[53:61], psw[80:88] = p[80:88].copy(), p[53:61].copy()
         for n, (frame, x0, y0) in cells.items():
             s, cy, cx = n // 100, n % 100 // 10, n % 10
             f = frame[y0:y0 + 48, x0:x0 + 48]
-            rgba = np.dstack([p[f], np.where(f != 0, 255, 0).astype(np.uint8)])
+            rgba = np.dstack([(psw if n // PER in SWAP_RAMPS else p)[f], np.where(f != 0, 255, 0).astype(np.uint8)])
             rgba[f == 0] = 0
             big[s, cy * 48:cy * 48 + 48, cx * 48:cx * 48 + 48] = rgba
         ph = xxhash.xxh3_64_intdigest(struct.pack('<16H', *clut))
