@@ -171,6 +171,7 @@ PlayStation resolution:
 | `hdpack.py` | The script: reads both discs, runs the generators, writes the PNGs |
 | `gen/hdfaces.py`, `hdunits.py`, `hdmaps.py`, `hdbacks.py` | Portraits, battle map units, battle maps, halls and town overviews |
 | `gen/ls11.py`, `timdump.py`, `disc.py` | PC archive format, PlayStation TIM pictures, disc image reader |
+| `tools/dev/hdaudit.py`, `tcstate.py` | For development: coverage report (every picture on the PlayStation disc against the PNGs), DuckStation save state inspector (needs Python 3.14) |
 
 Tested with DuckStation (OpenGL renderer) on Linux. The Windows steps have not been tried on a
 Windows machine yet; please report anything that does not match.
