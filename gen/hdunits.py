@@ -4,7 +4,8 @@
 usage: python gen/hdunits.py PC_DIR OUTDIR [--preview]
   PC_DIR holds CHR_IDO.E2, CHR_ATT.E2, PALET.E2 (hdpack.py --keep-work)
   -> OUTDIR/texupload-P4-<sheet hash>-<palette hash>-60x240-0-0-240x240-P0-15.png (480x480 RGBA, 7 sheets x 4
-  side palettes); --preview adds PS1-vs-PC side-by-side sheets (preview<n>_<palette>.png)
+  side palettes, and x every step of the white flash of each, see flash());
+  --preview adds PS1-vs-PC side-by-side sheets (preview<n>_<palette>.png)
   copy the texupload files to <DuckStation>/textures/SLPM-86205/replacements/
 
 The game uploads the 7 sheets whole (VRAM 384 + 64n, 256) and draws the map units from them with one of 4
@@ -42,6 +43,8 @@ ALIAS = {47: 6, 48: 6}
 # (green where the game draws him with the blue palette). His block gets the PC sprite with the two ramps exchanged,
 # so he keeps his PS1 colour instead of looking like every other cavalry unit.
 SWAP_RAMPS = {48}
+FLASH = 32                                            # steps of the white flash, see flash()
+TWINS = 64                                            # PC types below this come in pairs: even = red side, odd = blue
 ATT9 = (0, 2, 3, 5, 6, 8)
 SIDES = ('blue', 'purple', 'red', 'white')            # order of the EXE table
 
@@ -76,6 +79,54 @@ def recolour(pal, red, clut):
                 f = (l - xs[k]) / (xs[k + 1] - xs[k]); c = dst[k] * (1 - f) + dst[k + 1] * f
             out[i] = c
     return np.clip(out, 0, 255).astype(np.uint8)
+
+
+def ramps(f, g):
+    """which pixels of a PC red-side frame take the side's colours: (first, second) = position 0..7 in the first /
+    second ramp, -1 = a fixed colour. g = the same frame of the blue twin type (None = the type has no twin).
+
+    The palette index alone does not say it: the top of the red ramp (59-61, orange) is also the colour of bridles,
+    harness and gold trim, and the red art shades its garments with browns and oranges from outside the ramp. The
+    PC's own blue frames do say it: there the first colour is the blue ramp 80-87 and everything fixed is unchanged."""
+    first, second = np.full(f.shape, -1), np.full(f.shape, -1)
+    blue = (f >= 80) & (f <= 87)
+    if g is None:
+        # no twin to ask: 53-58 always; 59-60 only where they touch (through each other) a 53-58 pixel, the rule
+        # that agrees best with the twins on the types that have one (about 97% of those pixels)
+        m, amb = (f >= 53) & (f <= 58), (f == 59) | (f == 60)
+        while True:
+            q = np.pad(m, 1)
+            near = sum(q[1 + dy:q.shape[0] - 1 + dy, 1 + dx:q.shape[1] - 1 + dx] for dy in (-1, 0, 1) for dx in (-1, 0, 1)) > 0
+            grown = m | (near & amb)
+            if (grown == m).all():
+                break
+            m = grown
+        first[m] = f[m] - 53
+        second[blue] = f[blue] - 80
+        return first, second
+    gblue = (g >= 80) & (g <= 87)
+    m = (f >= 53) & (f <= 58)                       # always side colour (red art that the twin draws differently)
+    first[m] = f[m] - 53
+    m = gblue & (f != 0) & ~blue                    # the twin has the side colour here: its shade
+    first[m] = g[m] - 80
+    m = blue & ~gblue                               # the twin turns the red side's blue into its own second colour
+    second[m] = f[m] - 80
+    return first, second
+
+
+def flash(clut, big, step):
+    """the palette and the sheets of one step of the white flash (a unit that is healed, resupplied, ...): the
+    program (0x8007c858) reads the unit's side palette back, moves every colour but 0 towards white, each 5-bit
+    channel = (c * (32 - step) + 31 * step) / 32, for step 0..32 and back, and draws the unit with that palette
+    (VRAM 256, 244). DuckStation names a texture after its palette too, so every step needs its own sheets."""
+    if not step:
+        return clut, big
+    ch = lambda c: (c * (32 - step) + 31 * step) // 32
+    pc = [v and (v & 0x8000 | ch(v >> 10 & 31) << 10 | ch(v >> 5 & 31) << 5 | ch(v & 31)) for v in clut]
+    pic = big.copy()
+    pic[..., :3] = (big[..., :3].astype(np.uint16) * (32 - step) + 248 * step) // 32
+    pic[big[..., 3] == 0] = 0
+    return pc, pic
 
 
 def lsents(path):
@@ -139,45 +190,60 @@ def main(argv=None):
     idx = np.stack([s[1] for s in sheets])                                   # 7 x 240 x 240
     fpal = np.array([rgb15(v) for v in red], np.float32)
 
-    # cell -> (PC frame, window x, y)
+    # cell -> (PC frame, the same frame of the blue twin type or None, window x, y)
     cells = {}
     for b, t in enumerate(BLOCK_TYPE):
         if t is None:
             continue
         n = b * PER
         walk, a, hit = ido[t].reshape(6, 48, 48), att[t].reshape(-1, 64, 64), att[79 + t].reshape(48, 48)
+        tw = t + 1 if t < TWINS else None
+        walk2, a2, hit2 = (ido[tw].reshape(6, 48, 48), att[tw].reshape(-1, 64, 64), att[79 + tw].reshape(48, 48)) \
+            if tw is not None else ([None] * 6, [None] * 9, None)
         for k in range(6):
-            cells[n + k] = (walk[k], 0, 0)
+            cells[n + k] = (walk[k], walk2[k], 0, 0)
             m = n + 6 + k
             ci = idx[m // 100, m % 100 // 10 * 24:m % 100 // 10 * 24 + 24, m % 10 * 24:m % 10 * 24 + 24]
             cm = (ci != 0).astype(np.float32)
-            f = a[ATT9[k] if len(a) == 9 else k]
-            cells[m] = (f,) + window(fpal[ci] * cm[..., None], cm, f, pal)
-        cells[n + 12] = (hit, 0, 0)
+            j = ATT9[k] if len(a) == 9 else k
+            cells[m] = (a[j], a2[j]) + window(fpal[ci] * cm[..., None], cm, a[j], pal)
+        cells[n + 12] = (hit, hit2, 0, 0)
     for b, src in ALIAS.items():
         for k in range(PER):
             cells[b * PER + k] = cells[src * PER + k]
 
+    done = set()
     for side, clut in cluts.items():
         c4 = np.array([timdump.c15(v) for v in clut], np.uint8)
         big = np.repeat(np.repeat(c4[idx], 2, axis=1), 2, axis=2)            # PS1 pixels 2x, this side's colours
         p = pal if side == 'red' else recolour(pal, red, clut)
-        psw = p.copy()
-        psw[53:61], psw[80:88] = p[80:88].copy(), p[53:61].copy()
-        for n, (frame, x0, y0) in cells.items():
+        for n, (frame, twin, x0, y0) in cells.items():
             s, cy, cx = n // 100, n % 100 // 10, n % 10
             f = frame[y0:y0 + 48, x0:x0 + 48]
-            rgba = np.dstack([(psw if n // PER in SWAP_RAMPS else p)[f], np.where(f != 0, 255, 0).astype(np.uint8)])
+            first, second = ramps(f, None if twin is None else twin[y0:y0 + 48, x0:x0 + 48])
+            swap = n // PER in SWAP_RAMPS
+            if swap:
+                first, second = second, first
+            rgb = pal[f]
+            if swap or side != 'red':                # the red side is the PC red art as it is
+                rgb[first >= 0] = p[53 + first[first >= 0]]
+                rgb[second >= 0] = p[80 + second[second >= 0]]
+            rgba = np.dstack([rgb, np.where(f != 0, 255, 0).astype(np.uint8)])
             rgba[f == 0] = 0
             big[s, cy * 48:cy * 48 + 48, cx * 48:cx * 48 + 48] = rgba
-        ph = xxhash.xxh3_64_intdigest(struct.pack('<16H', *clut))
-        for s, (t, _) in enumerate(sheets):
-            name = 'texupload-P4-%016X-%016X-%dx%d-0-0-%dx%d-P0-15.png' % (
-                xxhash.xxh3_64_intdigest(t['pix']), ph, t['w'], t['h'], t['w'] * 4, t['h'])
-            Image.fromarray(big[s], 'RGBA').save(os.path.join(out, name))
-            if '--preview' in argv:
-                a = np.repeat(np.repeat(c4[idx[s]], 2, axis=0), 2, axis=1)
-                Image.fromarray(np.hstack([a, big[s]]), 'RGBA').save(os.path.join(out, 'preview%d_%s.png' % (s, side)))
+        for step in range(FLASH + 1):                # 0 = the side palette itself
+            pc, pic = flash(clut, big, step)
+            ph = xxhash.xxh3_64_intdigest(struct.pack('<16H', *pc))
+            if ph in done:                           # the first steps round to the palette before them
+                continue
+            done.add(ph)
+            for s, (t, _) in enumerate(sheets):
+                name = 'texupload-P4-%016X-%016X-%dx%d-0-0-%dx%d-P0-15.png' % (
+                    xxhash.xxh3_64_intdigest(t['pix']), ph, t['w'], t['h'], t['w'] * 4, t['h'])
+                Image.fromarray(pic[s], 'RGBA').save(os.path.join(out, name))
+                if '--preview' in argv and not step:
+                    a = np.repeat(np.repeat(c4[idx[s]], 2, axis=0), 2, axis=1)
+                    Image.fromarray(np.hstack([a, big[s]]), 'RGBA').save(os.path.join(out, 'preview%d_%s.png' % (s, side)))
     # what stays PS1 pixels (2x nearest) inside the replaced sheets, for the audit
     used = [m for m in range(len(sheets) * 100)
             if (idx[m // 100, m % 100 // 10 * 24:m % 100 // 10 * 24 + 24, m % 10 * 24:m % 10 * 24 + 24] != 0).any()]
@@ -196,7 +262,7 @@ def main(argv=None):
     for b, src in sorted(ALIAS.items()):
         print('block %d shows the PC sprite of block %d (PS1-only officer sprite)' % (b, src))
     json.dump(report, open(os.path.join(out, 'hd_report.json'), 'w'), indent=1)
-    print(len(sheets) * len(cluts), 'sheets ->', out)
+    print(len(sheets) * len(cluts), 'sheets (+ %d for the white flash) ->' % (len(sheets) * (len(done) - len(cluts))), out)
 
 
 if __name__ == '__main__':

@@ -74,12 +74,14 @@ version.
    py hdpack.py "C:\Games\koumeiden_pc.iso" "C:\Games\Sangokushi Koumeiden (Japan) (Track 1).bin"
    ```
 
-   Names with spaces need the quotation marks. After about a minute it prints
-   `564 replacement textures in ...` and the pictures are in a new folder named `out`.
+   Names with spaces need the quotation marks. After two to three minutes it prints
+   `1389 replacement textures in ...` and the pictures are in a new folder named `out`
+   (about 300 MB).
 6. **Copy the textures into DuckStation.** In DuckStation open the menu **Tools > Open Data
    Directory...**. In the folder that opens, go into `textures` (create it if it is not there),
    create a folder named `SLPM-86205`, and inside that a folder named `replacements`. Copy all
-   564 files from `out` into `replacements`.
+   the files from `out` into `replacements`. If you are updating from an older version of the
+   pack, empty `replacements` first.
 
    The folder name must be exactly `SLPM-86205`: that is how DuckStation lists this disc, even
    though the disc's own serial is different.
@@ -142,14 +144,18 @@ PlayStation resolution:
 - **Portraits**: 15 portraits were drawn new for the PlayStation version and have no PC
   counterpart: the Rattan Armor soldiers, Zhuge Xuan, Kongming's mother, Zhuge Ming, Pang Degong,
   Pang Shanmin, Meng Gongwei, the older Sima Yi, Empress Fu, Fu Wan, Empress Zhang, Sun
-  Shangxiang, Huang Yueying and two more. Hat tops and plumes that reach above the PC portrait
-  frame also stay PlayStation pixels (103 portraits).
+  Shangxiang, Huang Yueying and two more. Eight more are not the same drawing on the two
+  systems (another hat, other colours, in one case another person) and stay PlayStation pictures
+  as well. Every portrait keeps the outline of the PlayStation one, so nothing of the PC
+  portrait's coloured backdrop shows around the head; hat tops and plumes that reach outside the
+  PC portrait frame stay PlayStation pixels.
 - **Battle map units**: the effects (ships, fire ship, fire, confusion cloud, splash, arrows,
   starburst, boulder, slash) were redrawn for the PlayStation and look different on the PC. The
   Chief Strategist unit is a PlayStation-only sprite. Guan Yu and Zhang Fei have
   their own sprites on the PlayStation only; with the pack they show the PC's Light Cavalry sprite
   (their unit class). Zhang Fei's has its two colours exchanged, so he stays green as on the
-  PlayStation instead of looking like the other cavalry.
+  PlayStation instead of looking like the other cavalry. Most of the textures are the units
+  again in each step of the white flash the game shows when a unit is healed or resupplied.
 - **Battle maps**: two maps (43 and 44) are not on the PC disc.
 - **Halls**: the PC picture covers the middle 200 of the PlayStation's 240 rows; the top and
   bottom 20 rows stay at PlayStation resolution, and the PC part is shown in the PlayStation
